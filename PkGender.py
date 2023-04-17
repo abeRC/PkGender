@@ -15,7 +15,10 @@ from shutil import copy2
 import uuid
 import string
 import logging
+import sys
 
+PROGRAM_NAME = 'PkGender'
+PROGRAM_VERSION = "v0.9 (zoopoide)" # v1 will be zoopinho
 small_block_1_start = 0x00000
 small_block_2_start = 0x40000
 trainer_name_size = 0x10
@@ -53,32 +56,58 @@ prop_offset_dict = {
 # create a named tuple type to increase readability of the argument list
 ChangeList = namedtuple("ChangeList", ["gender", "name"])
 
+def setup_logging (debug : bool):
+    if debug: # debug #read this from an argument
+        log_level = logging.DEBUG 
+    else:
+        log_level = logging.INFO
 
-def parse_arguments() -> Tuple[str, ChangeList]:
-    # TODO: implement this
-    """
+    log_format = "[{levelname}] - {message}"
+    logging.basicConfig(level=log_level, format=log_format, style='{')
+
+def parse_arguments():
+    """Parse command-line arguments using the argparse library.
+    This also sets up logging."""
+    version_string = PROGRAM_NAME + " " + PROGRAM_VERSION + " -- Copyright (c) abeRC"
     parser = argparse.ArgumentParser(
-                    prog='ProgramName',
-                    description='What the program does',
-                    epilog='Text at the bottom of help')
-    parser.add_argument('filename')           # positional argument
-    parser.add_argument('-c', '--count')      # option that takes a value
-    parser.add_argument('-v', '--verbose',
-                        action='store_true')  # on/off flag
-    args = parser.parse_args()
-    print(args.filename, args.count, args.verbose)
-    """
+                    description='A Python script to change trainer data (name, gender, etc.)\n'+
+                                'in gen IV Pokémon games (Diamond, Pearl, Platinum, HeartGold, SoulSilver).',
+                    epilog=version_string,
+                    formatter_class=argparse.RawTextHelpFormatter) # print help for name in a prettier way
+    parser.add_argument('savepath', help="path to save file") # positional argument
     
-    save_path = "POKEMON SS_IPGE01_00.sav"
-    #save_path = "Pokemon Platinum (E) - 3797.sav"
-    to_change = ChangeList(gender=True, name="Ais")
-   
-    return save_path, to_change
+    parser.add_argument('--name', help="change trainer's name to specified string\n (limit of 7 characters)") # takes a value
+    parser.add_argument('--gender', action='store_true', help="swap trainer's gender") # on/off flag
 
-def verify_soundness (to_change : ChangeList):
-    # TODO: implement this
-    # verify if name is acceptable (A-Za-z0-9 and <= 7 characters)
-    pass
+    parser.add_argument('--verify-only','--dry-run', action='store_true', 
+                        help='do not edit save file\n (only verify checksum)') # on/off flag
+    parser.add_argument('--debug','-d', action='store_true', help='enable debug messages') # on/off flag
+    parser.add_argument('--version','-v', action='version', 
+                        version=version_string, help='print version information')
+
+    args = parser.parse_args()
+    setup_logging(args.debug)
+    logging.debug(f"args: {args}")
+
+    return args
+
+def verify_soundness (save_path : str, to_change : ChangeList):
+    """Verify if command-line arguments are appropriate."""
+
+    # check if save file looks ok
+    if not os.path.isfile(save_path):
+        raise Exception(f"Not a valid file: {save_path}")
+    if not save_path.lower().endswith(".sav"):
+        logging.warn("Save file does not have the .sav extension.")
+    
+    # verify if name is <= 7 characters and alphanumeric
+    trainer_name = to_change.name
+    if len(trainer_name) >= 8:
+        raise ValueError("Trainer name must have 7 or less characters.")
+    alpha_num = set(string.digits+string.ascii_letters)
+    if set(trainer_name).difference(alpha_num): # if trainer_name has characters not in alpha_num
+        raise ValueError("Trainer name may only contain alphanumeric characters currently.")
+
 
 def read_save (save_path : str) -> bytes:
     with open(save_path, "rb") as f:
@@ -126,7 +155,8 @@ def determine_target_game (data_all : bytes) -> TargetGame:
         chk1_read = data_all[footer_offset + footer_size - 2 : footer_offset + footer_size]
         logging.debug(f"  checksum: {chk1_read.hex().upper()}")
         logging.debug("  small block 2 (original, read)")
-        chk2_read = data_all[small_block_2_start + footer_offset + footer_size - 2 : small_block_2_start + footer_offset + footer_size]
+        chk2_read = data_all[small_block_2_start + footer_offset + footer_size - 2 : 
+                                small_block_2_start + footer_offset + footer_size]
         logging.debug(f"  checksum: {chk2_read.hex().upper()}")
 
         # sanity check
@@ -238,27 +268,18 @@ def edit_save (data_all : bytes, target_game : TargetGame, to_change : ChangeLis
         f.write(edited_data)
 
 def main ():
-    # setup logging
-    if True: # debug #read this from an argument
-        log_level = logging.DEBUG 
-    else:
-        log_level = logging.INFO
-
-    log_format = "[{levelname}] - {message}"
-    logging.basicConfig(level=log_level, format=log_format, style='{')
-
     # parse arguments
-    save_path, to_change = parse_arguments()
-    verify_soundness(to_change)
-    if not os.path.isfile(save_path):
-        raise Exception(f"Not a valid file: {save_path}")
-    if not save_path.lower().endswith(".sav"):
-        logging.warn("Save file does not have the .sav extension.")
+    args = parse_arguments()
+    save_path = args.savepath
+    to_change = ChangeList(gender=args.gender, name=args.name)
+    verify_soundness(save_path, to_change)
 
-    # read save, determine game, edit save file
+    # read save, determine game, edit save file (unless --verify-only is set)
     data_all = read_save(save_path)
     target_game = determine_target_game(data_all)
-    edit_save(data_all, target_game, to_change, save_path)
+    if not args.verify_only:
+        edit_save(data_all, target_game, to_change, save_path)
+    logging.info("Done!")
 
 if __name__ == "__main__":
     main()
