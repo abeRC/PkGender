@@ -4,25 +4,45 @@ A Python script to change trainer data (name, gender, etc.) in gen IV Pokémon g
 
 * **USE AT YOUR OWN RISK!**
 
-* Python 3.6+ required
+* Note: NO$GBA prepends .sav files with a header, making them a slightly different format. Please convert to regular .sav files before using this tool.
 
-* It is recommended to run this script inside a [conda environment](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) with the [fastcrc module](https://fastcrc.readthedocs.io/en/latest/) installed (through pip).
+### Setup
+
+* To use the [provided binaries](https://github.com/abeRC/PkGender/releases/), unzip the archive and run the executable normally according to usage instructions.
+
+* To run this script using the Python interpreter, Python 3.6+ is required.
+  
+  * It is recommended to run this script inside a [conda environment](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) with the [fastcrc module](https://fastcrc.readthedocs.io/en/latest/) installed (through pip).
   
   * You could also install fastcrc through your system pip (pip3 on Linux).
 
-* Note: NO$GBA prepends .sav files with a header, making them a slightly different format. Please convert to regular .sav files before using this tool.
-
 ### Usage
 
-```
-PkGender.py [--name NAME] [--gender] [--verify-only] [--help] [--debug] [--version] savepath
-```
+* Linux (from a terminal prompt)
+  
+  ```
+  ./PkGender [--name NAME] [--gender] [--verify-only] [--help] [--debug] [--version] savefile
+  ```
+
+* Windows (from a powershell or cmd prompt)
+  
+  NOTE: This may or may not work since it was compiled in a weird way (i.e., using wine instead of a Windows system). On my tests, it did work, though, so it should be ok.  :)
+  
+  ```
+  .\PkGender [--name NAME] [--gender] [--verify-only] [--help] [--debug] [--version] savefile
+  ```
+
+* Python interpreter (see Setup for dependencies)
+  
+  ```
+  python PkGender.py [--name NAME] [--gender] [--verify-only] [--help] [--debug] [--version] savefile
+  ```
 
 * Positional arguments:
   
   | Argument | Description       |
   | -------- |:-----------------:|
-  | savepath | path to save file |
+  | savefile | Path to save file |
 
 * Optional arguments:
   
@@ -40,8 +60,6 @@ PkGender.py [--name NAME] [--gender] [--verify-only] [--help] [--debug] [--versi
 * Support for additional symbols in trainer name
 
 * Support to change trainer id, secret id, money, badges, country of origin / language
-
-* Executable binaries
 
 * Support for additional generations of Pokémon games
 

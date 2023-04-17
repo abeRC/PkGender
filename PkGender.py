@@ -74,7 +74,7 @@ def parse_arguments():
                                 'in gen IV Pokémon games (Diamond, Pearl, Platinum, HeartGold, SoulSilver).',
                     epilog=version_string,
                     formatter_class=argparse.RawTextHelpFormatter) # print help for name in a prettier way
-    parser.add_argument('savepath', help="path to save file") # positional argument
+    parser.add_argument('savefile', help="path to save file") # positional argument
     
     parser.add_argument('--name', help="change trainer's name to specified string\n (limit of 7 characters)") # takes a value
     parser.add_argument('--gender', action='store_true', help="swap trainer's gender") # on/off flag
@@ -100,13 +100,14 @@ def verify_soundness (save_path : str, to_change : ChangeList):
     if not save_path.lower().endswith(".sav"):
         logging.warn("Save file does not have the .sav extension.")
     
-    # verify if name is <= 7 characters and alphanumeric
+    # if not None, verify if name is <= 7 characters and alphanumeric
     trainer_name = to_change.name
-    if len(trainer_name) >= 8:
-        raise ValueError("Trainer name must have 7 or less characters.")
-    alpha_num = set(string.digits+string.ascii_letters)
-    if set(trainer_name).difference(alpha_num): # if trainer_name has characters not in alpha_num
-        raise ValueError("Trainer name may only contain alphanumeric characters currently.")
+    if trainer_name:
+        if len(trainer_name) >= 8:
+            raise ValueError("Trainer name must have 7 or less characters.")
+        alpha_num = set(string.digits+string.ascii_letters)
+        if set(trainer_name).difference(alpha_num): # if trainer_name has characters not in alpha_num
+            raise ValueError("Trainer name may only contain alphanumeric characters currently.")
 
 
 def read_save (save_path : str) -> bytes:
@@ -270,7 +271,7 @@ def edit_save (data_all : bytes, target_game : TargetGame, to_change : ChangeLis
 def main ():
     # parse arguments
     args = parse_arguments()
-    save_path = args.savepath
+    save_path = args.savefile
     to_change = ChangeList(gender=args.gender, name=args.name)
     verify_soundness(save_path, to_change)
 

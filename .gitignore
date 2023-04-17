@@ -4,3 +4,6 @@ bla.py
 *.SAV
 *.nds
 *.NDS
+*.zip
+windows/
+dist-linux/
